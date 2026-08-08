@@ -9,31 +9,37 @@ on:
 jobs:
   build-and-test:
     name: ${{ matrix.name }}
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: GCC 12 Release
+            os: ubuntu-22.04
             cc: gcc-12
             cxx: g++-12
             build_type: Release
             extra_flags: ""
+            extra_pkgs: ""
 
           - name: GCC 12 ASan+UBSan
+            os: ubuntu-22.04
             cc: gcc-12
             cxx: g++-12
             build_type: Debug
             extra_flags: >-
               -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
               -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+            extra_pkgs: ""
 
-          - name: Clang 16 Release
-            cc: clang-16
-            cxx: clang++-16
+          - name: Clang 18 Release
+            os: ubuntu-24.04
+            cc: clang-18
+            cxx: clang++-18
             build_type: Release
             extra_flags: ""
+            extra_pkgs: "clang-18"
 
     steps:
       - name: Checkout
@@ -46,7 +52,7 @@ jobs:
             libpcap-dev \
             cmake \
             ninja-build \
-            clang-16
+            ${{ matrix.extra_pkgs }}
 
       - name: Cache fetched dependencies
         uses: actions/cache@v4
