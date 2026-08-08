@@ -20,7 +20,7 @@ jobs:
             cc: gcc-12
             cxx: g++-12
             build_type: Release
-            extra_flags: ""
+            extra_cmake: ""
             extra_pkgs: ""
 
           - name: GCC 12 ASan+UBSan
@@ -28,7 +28,7 @@ jobs:
             cc: gcc-12
             cxx: g++-12
             build_type: Debug
-            extra_flags: >-
+            extra_cmake: >-
               -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
               -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
             extra_pkgs: ""
@@ -38,7 +38,7 @@ jobs:
             cc: clang-18
             cxx: clang++-18
             build_type: Release
-            extra_flags: ""
+            extra_cmake: ""
             extra_pkgs: "clang-18"
 
     steps:
@@ -52,14 +52,35 @@ jobs:
             libpcap-dev \
             cmake \
             ninja-build \
+            python3-pip \
             ${{ matrix.extra_pkgs }}
 
-      - name: Cache fetched dependencies
+      - name: Install Conan
+        run: pip3 install --break-system-packages "conan>=2.0"
+
+      - name: Detect Conan profile
+        env:
+          CC:  ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: conan profile detect --force
+
+      - name: Cache Conan packages
         uses: actions/cache@v4
         with:
-          path: build/_deps
-          key: deps-${{ hashFiles('cmake/FetchDependencies.cmake') }}
-          restore-keys: deps-
+          path: ~/.conan2/p
+          key: conan-${{ matrix.os }}-${{ matrix.cc }}-${{ matrix.build_type }}-${{ hashFiles("conanfile.txt") }}
+          restore-keys: conan-${{ matrix.os }}-${{ matrix.cc }}-${{ matrix.build_type }}-
+
+      - name: Install Conan dependencies
+        env:
+          CC:  ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          conan install . \
+            --output-folder=build \
+            --build=missing \
+            -s build_type=${{ matrix.build_type }} \
+            -s compiler.cppstd=20
 
       - name: Configure
         env:
@@ -67,8 +88,9 @@ jobs:
           CXX: ${{ matrix.cxx }}
         run: |
           cmake -B build \
+            -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            ${{ matrix.extra_flags }}
+            ${{ matrix.extra_cmake }}
 
       - name: Build
         run: cmake --build build --parallel $(nproc)
