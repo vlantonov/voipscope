@@ -25,21 +25,29 @@ and emits one CDR-style JSON record per completed call leg.
 
 | Dependency | Version | How supplied |
 |-----------|---------|-------------|
-| GCC or Clang | ≥ 12 / ≥ 16 | system |
+| GCC or Clang | ≥ 12 / ≥ 18 | system |
 | CMake | ≥ 3.20 | system |
+| Conan | ≥ 2.0 | `pip install conan` |
 | libpcap | any recent | system (`apt install libpcap-dev`) |
-| nlohmann/json | 3.11.3 | CMake FetchContent (auto) |
-| GoogleTest | 1.14.0 | CMake FetchContent (auto) |
+| nlohmann/json | 3.11.3 | Conan Center (auto) |
+| GoogleTest | 1.14.0 | Conan Center (auto) |
 
 ## Build
 
 ```bash
-# Ubuntu / Debian
-sudo apt install libpcap-dev cmake build-essential
+# Ubuntu / Debian — system prerequisites
+sudo apt install libpcap-dev cmake build-essential python3-pip
+pip3 install "conan>=2.0"
 
 git clone https://github.com/vlantonov/voipscope
 cd voipscope
-cmake -B build
+
+# Install C++ dependencies from Conan Center
+conan profile detect          # one-time: detect local compiler
+conan install . --output-folder=build --build=missing -s compiler.cppstd=20
+
+# Configure, build
+cmake -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j$(nproc)
 ```
 

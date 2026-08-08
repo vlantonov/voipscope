@@ -52,8 +52,11 @@ jobs:
             libpcap-dev \
             cmake \
             ninja-build \
-            python3-pip \
-            ${{ matrix.extra_pkgs }}
+            python3-pip
+
+      - name: Install extra packages
+        if: matrix.extra_pkgs != ''
+        run: sudo apt-get install -y --no-install-recommends ${{ matrix.extra_pkgs }}
 
       - name: Install Conan
         run: pip3 install --break-system-packages "conan>=2.0"
