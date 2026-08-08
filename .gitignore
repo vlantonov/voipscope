@@ -42,7 +42,6 @@
 # Build directories
 build/
 Build/
-build/
 build-*/
 build_*/
 
